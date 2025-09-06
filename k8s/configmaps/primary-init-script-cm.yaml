@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-primary-init-script
+data:
+  init.sh: |
+    #!/bin/bash
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+        CREATE USER ${REPLICA_USER} WITH REPLICATION PASSWORD '${REPLICA_PASSWORD}';
+    EOSQL
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+        GRANT CONNECT ON DATABASE ${POSTGRES_DB} TO ${REPLICA_USER};
+        GRANT USAGE ON SCHEMA public TO ${REPLICA_USER};
+        GRANT SELECT ON ALL TABLES IN SCHEMA public TO ${REPLICA_USER};
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO ${REPLICA_USER};
+    EOSQL
+    echo "host replication ${REPLICA_USER} all md5" >> "${PGDATA}/pg_hba.conf"

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: kuberneteslearning-frontendservice:1.0.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+          env:
+            - name: REACT_APP_POST_MESSAGE_URL
+              value: "http://kubernetes.local/api/service1/message" # Using /api prefix
+            - name: REACT_APP_GET_MESSAGES_URL
+              value: "http://kubernetes.local/api/service2/message" # Using /api prefix
+          readinessProbe:
+            httpGet:
+              path: /index.html
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /index.html
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
